@@ -12,6 +12,8 @@ contract DeFiSeedFinder {
     ISeedToken private seedToken;
     IERC20 private DFIToken;
 
+    uint256 private lockedDFIToken;
+
     /* ====== Events ====== */
 
     event TokenSwap(address _from, address _to, uint256 _amount);
@@ -55,5 +57,9 @@ contract DeFiSeedFinder {
 
     function getDSeedTokenAddress() external view returns (address) {
         return address(seedToken);
+    }
+
+    function getLockedDFITokens() external view returns (uint256) {
+        return lockedDFIToken;
     }
 }
