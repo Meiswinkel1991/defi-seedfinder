@@ -12,6 +12,8 @@ contract SeedProject {
 
     uint256 private fundedDFIToken;
 
+    uint256 private deadline;
+
     address private projectToken;
 
     constructor() {}
