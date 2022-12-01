@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-contract SeedProject {
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+
+contract SeedProject is Initializable {
     enum Status {
         pending,
         success,
@@ -16,5 +18,10 @@ contract SeedProject {
 
     address private projectToken;
 
-    constructor() {}
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize() public initializer {}
 }
