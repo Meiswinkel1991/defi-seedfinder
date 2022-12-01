@@ -36,6 +36,8 @@ contract SeedFinderTrove {
 
         seedToken.mint(msg.sender, _amount);
 
+        lockedDFIToken += _amount;
+
         emit TokenSwap(address(DFIToken), address(seedToken), _amount);
     }
 
@@ -43,6 +45,8 @@ contract SeedFinderTrove {
         seedToken.burn(msg.sender, _amount);
 
         require(DFIToken.transfer(msg.sender, _amount));
+
+        lockedDFIToken -= _amount;
 
         emit TokenSwap(address(seedToken), address(DFIToken), _amount);
     }
