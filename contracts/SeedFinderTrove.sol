@@ -4,9 +4,9 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/ISeedToken.sol";
 
-error DeFiSeedFinder__NotEnoughAllowance();
+error SeedFinderTrove__NotEnoughAllowance();
 
-contract DeFiSeedFinder {
+contract SeedFinderTrove {
     /* === State Variables ====== */
 
     ISeedToken private seedToken;
@@ -29,7 +29,7 @@ contract DeFiSeedFinder {
         uint256 _allowance = DFIToken.allowance(msg.sender, address(this));
 
         if (_allowance < _amount) {
-            revert DeFiSeedFinder__NotEnoughAllowance();
+            revert SeedFinderTrove__NotEnoughAllowance();
         }
 
         require(DFIToken.transferFrom(msg.sender, address(this), _amount));

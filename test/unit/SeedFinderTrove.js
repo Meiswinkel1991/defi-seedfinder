@@ -4,8 +4,14 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
 !developmentChains.includes(network.name)
   ? describe.skip
-  : describe("DeFiSeedFinder Unit Test", () => {
-      let seedToken, DFIToken, seedFinder, owner, badActor, user, tokenAmount;
+  : describe("SeedFinderTrove Unit Test", () => {
+      let seedToken,
+        DFIToken,
+        seedFinderTrove,
+        owner,
+        badActor,
+        user,
+        tokenAmount;
 
       beforeEach(async () => {
         [owner, user, badActor] = await ethers.getSigners();
@@ -14,9 +20,9 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
         seedToken = await ethers.getContract("SeedToken");
         DFIToken = await ethers.getContract("MockToken");
-        seedFinder = await ethers.getContract("DeFiSeedFinder");
+        seedFinderTrove = await ethers.getContract("SeedFinderTrove");
 
-        await seedToken.updateSeedFinderAddress(seedFinder.address);
+        await seedToken.updateSeedFinderAddress(seedFinderTrove.address);
 
         tokenAmount = ethers.utils.parseEther("100");
 
@@ -28,9 +34,14 @@ const { developmentChains } = require("../../helper-hardhat-config");
 
       describe("#swapDFITokenToSeedToken", async () => {
         it("successfully swap DFI Tokens to Seed Tokens", async () => {
-          await DFIToken.connect(user).approve(seedFinder.address, tokenAmount);
+          await DFIToken.connect(user).approve(
+            seedFinderTrove.address,
+            tokenAmount
+          );
 
-          await seedFinder.connect(user).swapDFITokenToSeedToken(tokenAmount);
+          await seedFinderTrove
+            .connect(user)
+            .swapDFITokenToSeedToken(tokenAmount);
 
           const _balanceSeedTokens = await seedToken.balanceOf(user.address);
 
@@ -38,25 +49,28 @@ const { developmentChains } = require("../../helper-hardhat-config");
         });
 
         it("successfully emit an event after swapping DFI Tokens", async () => {
-          await DFIToken.connect(user).approve(seedFinder.address, tokenAmount);
+          await DFIToken.connect(user).approve(
+            seedFinderTrove.address,
+            tokenAmount
+          );
           await expect(
-            seedFinder.connect(user).swapDFITokenToSeedToken(tokenAmount)
+            seedFinderTrove.connect(user).swapDFITokenToSeedToken(tokenAmount)
           )
-            .to.emit(seedFinder, "TokenSwap")
+            .to.emit(seedFinderTrove, "TokenSwap")
             .withArgs(DFIToken.address, seedToken.address, tokenAmount);
         });
 
         it("failed swap with not enough allowable tokens", async () => {
           await DFIToken.connect(user).approve(
-            seedFinder.address,
+            seedFinderTrove.address,
             tokenAmount.div(ethers.constants.Two)
           );
 
           await expect(
-            seedFinder.connect(user).swapDFITokenToSeedToken(tokenAmount)
+            seedFinderTrove.connect(user).swapDFITokenToSeedToken(tokenAmount)
           ).to.be.revertedWithCustomError(
-            seedFinder,
-            "DeFiSeedFinder__NotEnoughAllowance"
+            seedFinderTrove,
+            "SeedFinderTrove__NotEnoughAllowance"
           );
         });
       });

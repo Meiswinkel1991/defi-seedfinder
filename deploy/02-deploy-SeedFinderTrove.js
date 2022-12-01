@@ -15,7 +15,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
   const args = [DFITokenDeployment.address, seedTokenDeployment.address];
 
-  const deployedDeFiSeedFinder = await deploy("DeFiSeedFinder", {
+  const deployedSeedFinderTrove = await deploy("SeedFinderTrove", {
     from: deployer,
     log: true,
     args: args,
@@ -27,7 +27,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     seedTokenDeployment.address
   );
 
-  await seedToken.updateSeedFinderAddress(deployedDeFiSeedFinder.address);
+  await seedToken.updateSeedFinderAddress(deployedSeedFinderTrove.address);
 };
 
-module.exports.tags = ["all", "seedfinder"];
+module.exports.tags = ["all", "trove"];
