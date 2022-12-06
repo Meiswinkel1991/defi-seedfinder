@@ -22,7 +22,16 @@ contract ProjectFactory {
         projectTokenImplementation = _projectTokenImplementation;
     }
 
+    function createNewProject(
+        address _founder,
+        uint256 _requestedFunding
+    ) external {}
+
     /* ====== Internal Functions ====== */
+
+    function _createProjectContract() internal {}
+
+    function _createProjectToken() internal {}
 
     /* ====== Pure / View ====== */
 
