@@ -2,6 +2,11 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
+import "./SeedProject.sol";
+import "./tokens/SeedProjectToken.sol";
+
+error ProjectFactory__DeadlineLowerThanTimestamp();
+error ProjectFactory__AddressIsZero();
 
 contract ProjectFactory {
     /* ====== Implementations ====== */
@@ -11,6 +16,16 @@ contract ProjectFactory {
     /* ====== State Variables ====== */
 
     address[] private deployedProjectContracts;
+
+    /* ====== Events ====== */
+
+    event ProjectCreated(
+        address contractAddress,
+        address tokenAddress,
+        address founder,
+        uint256 requestedFunding,
+        uint256 deadline
+    );
 
     /* ====== Main Functions ====== */
 
@@ -24,16 +39,56 @@ contract ProjectFactory {
 
     function createNewProject(
         address _founder,
-        uint256 _requestedFunding
-    ) external {}
+        address _fundingAddress,
+        uint256 _requestedFunding,
+        uint256 _deadline,
+        string memory _name,
+        string memory _symbol
+    ) external {
+        _isPossibleDeadline(_deadline);
+        _isNonZeroAddress(_fundingAddress);
+        _isNonZeroAddress(_founder);
+
+        address _projectClone = Clones.clone(projectContractImplementation);
+
+        address _tokenClone = Clones.clone(projectTokenImplementation);
+
+        SeedProject(_projectClone).initialize(
+            _deadline,
+            _requestedFunding,
+            _founder,
+            _fundingAddress,
+            address(_tokenClone)
+        );
+
+        SeedProjectToken(address(_tokenClone)).initialize(_name, _symbol);
+
+        deployedProjectContracts.push(_projectClone);
+
+        emit ProjectCreated(
+            address(_projectClone),
+            address(_tokenClone),
+            _founder,
+            _requestedFunding,
+            _deadline
+        );
+    }
 
     /* ====== Internal Functions ====== */
 
-    function _createProjectContract() internal {}
+    function _isPossibleDeadline(uint256 _deadline) internal view {
+        if (_deadline < block.timestamp) {
+            revert ProjectFactory__DeadlineLowerThanTimestamp();
+        }
+    }
 
-    function _createProjectToken() internal {}
+    function _isNonZeroAddress(address _to) internal pure {
+        if (_to == address(0)) {
+            revert ProjectFactory__AddressIsZero();
+        }
+    }
 
-    /* ====== Pure / View ====== */
+    /* ====== Pure / View Functions ====== */
 
     function getDeployedProjectContracts()
         external

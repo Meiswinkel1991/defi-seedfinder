@@ -2,13 +2,14 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 error SeedProject__FundingNotFinished();
 error SeedProject__FundingDontSucceed();
 error SeedProject__FundingDontFailed();
 
-contract SeedProject {
+contract SeedProject is Initializable {
     using SafeMath for uint256;
 
     enum Status {
@@ -34,6 +35,7 @@ contract SeedProject {
     /* ====== Events ====== */
 
     event FundingsTransfered(address fundingAddress, uint256 tokenAmount);
+    event ProjectStatusChanged(Status newStatus);
 
     /* ====== Modifier ====== */
 
@@ -58,33 +60,60 @@ contract SeedProject {
         _;
     }
 
-    constructor(
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
         uint256 _deadline,
         uint256 _requestedFunds,
         address _founder,
-        address _fundingAddress
-    ) {
+        address _fundingAddress,
+        address _tokenAddress
+    ) public initializer {
         projectStatus = Status.pending;
 
         deadline = _deadline;
         requestedFunds = _requestedFunds;
+        founder = _founder;
+        fundingAddress = _fundingAddress;
+        projectToken = _tokenAddress;
     }
 
-    function finishProject() external {}
+    function finishProject() external isFinished {
+        uint256 _fundingAmount = getFundedTokenAmount();
+
+        if (_fundingAmount < requestedFunds) {
+            require(_transferFundsToFundingAddress(_fundingAmount));
+
+            _setStatus(Status.success);
+        } else {
+            _setStatus(Status.failed);
+        }
+    }
+
+    function retrieveFunds() external isFinished isFailed {}
 
     /* ====== Internal Functions ======*/
 
-    function _setStatus(Status _newStatus) internal {}
+    function _setStatus(Status _newStatus) internal {
+        projectStatus = _newStatus;
+    }
 
-    function _transferFundsToFundingAddress() internal {
-        uint256 _balance = IERC20(projectToken).balanceOf(address(this));
-
-        IERC20(projectToken).transfer(fundingAddress, _balance);
+    function _transferFundsToFundingAddress(
+        uint256 _amount
+    ) internal returns (bool) {
+        return IERC20(projectToken).transfer(fundingAddress, _amount);
     }
 
     /* ====== Pure / View Functions ====== */
     function isFundingFinished() public view returns (bool) {
         return block.timestamp > deadline ? true : false;
+    }
+
+    function getFundedTokenAmount() public view returns (uint256) {
+        return IERC20(projectToken).balanceOf(address(this));
     }
 
     function getRequestedFunds() external view returns (uint256) {
