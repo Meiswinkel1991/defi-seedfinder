@@ -8,6 +8,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 error SeedProject__FundingNotFinished();
 error SeedProject__FundingDontSucceed();
 error SeedProject__FundingDontFailed();
+error SeedProject__NotEnoughProjectTokensLeft();
+error SeedProject__NotEnoughDSEEDAllowance();
 
 contract SeedProject is Initializable {
     using SafeMath for uint256;
@@ -24,18 +26,30 @@ contract SeedProject is Initializable {
 
     uint256 private deadline;
 
+    uint256 private tokenPrice;
+
     address private projectToken;
 
     address private founder;
 
     address private fundingAddress;
 
+    address private seedToken;
+
     Status private projectStatus;
 
     /* ====== Events ====== */
 
     event FundingsTransfered(address fundingAddress, uint256 tokenAmount);
+
     event ProjectStatusChanged(Status newStatus);
+
+    event Funding(
+        address funder,
+        uint256 dSeedTokens,
+        uint256 projectTokensclaimed,
+        uint256 newFundingAmount
+    );
 
     /* ====== Modifier ====== */
 
@@ -70,7 +84,8 @@ contract SeedProject is Initializable {
         uint256 _requestedFunds,
         address _founder,
         address _fundingAddress,
-        address _tokenAddress
+        address _tokenAddress,
+        address _seedTokenAddress
     ) public initializer {
         projectStatus = Status.pending;
 
@@ -79,6 +94,9 @@ contract SeedProject is Initializable {
         founder = _founder;
         fundingAddress = _fundingAddress;
         projectToken = _tokenAddress;
+        seedToken = _seedTokenAddress;
+
+        _initializeTokenPrice();
     }
 
     function finishProject() external isFinished {
@@ -95,6 +113,27 @@ contract SeedProject is Initializable {
 
     function retrieveFunds() external isFinished isFailed {}
 
+    function swapDSEEDToProjectToken(uint256 _amount) external {
+        _sufficientTokensAvailable(_amount);
+
+        _sufficientTokenAllowance(_amount);
+
+        require(
+            IERC20(seedToken).transferFrom(msg.sender, address(this), _amount)
+        );
+
+        uint256 _projectTokenAmount = _amount.div(tokenPrice);
+
+        IERC20(projectToken).transfer(msg.sender, _projectTokenAmount);
+
+        emit Funding(
+            msg.sender,
+            _amount,
+            _projectTokenAmount,
+            getFundedTokenAmount()
+        );
+    }
+
     /* ====== Internal Functions ======*/
 
     function _setStatus(Status _newStatus) internal {
@@ -107,12 +146,37 @@ contract SeedProject is Initializable {
         return IERC20(projectToken).transfer(fundingAddress, _amount);
     }
 
+    function _initializeTokenPrice() internal {
+        tokenPrice = requestedFunds.div(IERC20(projectToken).totalSupply());
+    }
+
+    function _sufficientTokensAvailable(uint256 _amount) internal view {
+        if (_amount > getProjectTokensLeft()) {
+            revert SeedProject__NotEnoughProjectTokensLeft();
+        }
+    }
+
+    function _sufficientTokenAllowance(uint256 _amount) internal view {
+        uint256 _allowance = IERC20(seedToken).allowance(
+            msg.sender,
+            address(this)
+        );
+
+        if (_allowance < _amount) {
+            revert SeedProject__NotEnoughDSEEDAllowance();
+        }
+    }
+
     /* ====== Pure / View Functions ====== */
     function isFundingFinished() public view returns (bool) {
         return block.timestamp > deadline ? true : false;
     }
 
     function getFundedTokenAmount() public view returns (uint256) {
+        return IERC20(seedToken).balanceOf(address(this));
+    }
+
+    function getProjectTokensLeft() public view returns (uint256) {
         return IERC20(projectToken).balanceOf(address(this));
     }
 
@@ -138,5 +202,9 @@ contract SeedProject is Initializable {
 
     function getRemainingFundingTime() external view returns (uint256) {
         return block.timestamp > deadline ? 0 : deadline.sub(block.timestamp);
+    }
+
+    function getTokenPrice() external view returns (uint256) {
+        return tokenPrice;
     }
 }

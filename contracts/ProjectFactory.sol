@@ -13,9 +13,13 @@ contract ProjectFactory {
     address private immutable projectContractImplementation;
     address private immutable projectTokenImplementation;
 
+    uint256 constant MAX_PROJECT_TOKEN_SUPPLY = 10000e18;
+
     /* ====== State Variables ====== */
 
     address[] private deployedProjectContracts;
+
+    address private seedTokenAddress;
 
     /* ====== Events ====== */
 
@@ -31,10 +35,13 @@ contract ProjectFactory {
 
     constructor(
         address _projectImplementation,
-        address _projectTokenImplementation
+        address _projectTokenImplementation,
+        address _seedTokenAddress
     ) {
         projectContractImplementation = _projectImplementation;
         projectTokenImplementation = _projectTokenImplementation;
+
+        seedTokenAddress = _seedTokenAddress;
     }
 
     function createNewProject(
@@ -53,15 +60,21 @@ contract ProjectFactory {
 
         address _tokenClone = Clones.clone(projectTokenImplementation);
 
+        SeedProjectToken(address(_tokenClone)).initialize(
+            _name,
+            _symbol,
+            MAX_PROJECT_TOKEN_SUPPLY,
+            address(_projectClone)
+        );
+
         SeedProject(_projectClone).initialize(
             _deadline,
             _requestedFunding,
             _founder,
             _fundingAddress,
-            address(_tokenClone)
+            address(_tokenClone),
+            seedTokenAddress
         );
-
-        SeedProjectToken(address(_tokenClone)).initialize(_name, _symbol);
 
         deployedProjectContracts.push(_projectClone);
 

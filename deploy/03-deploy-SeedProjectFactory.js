@@ -5,6 +5,8 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   const { deployer } = await getNamedAccounts();
   const { deploy, log } = deployments;
 
+  const seedTokenContract = await ethers.getContract("SeedToken");
+
   const deployedSeedProject = await deploy("SeedProject", {
     from: deployer,
     log: true,
@@ -19,7 +21,11 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     waitConfirmations: network.config.blockConfirmations || 1,
   });
 
-  const args = [deployedSeedProject.address, deployedSeedProjectToken.address];
+  const args = [
+    deployedSeedProject.address,
+    deployedSeedProjectToken.address,
+    seedTokenContract.address,
+  ];
 
   await deploy("ProjectFactory", {
     from: deployer,

@@ -17,9 +17,17 @@ contract SeedProjectToken is
 
     function initialize(
         string memory _name,
-        string memory _symbol
+        string memory _symbol,
+        uint256 _totalSupply,
+        address _projectAddress
     ) public initializer {
         __ERC20_init(_name, _symbol);
         __ERC20Permit_init(_name);
+
+        _mintTokensForProject(_projectAddress, _totalSupply);
+    }
+
+    function _mintTokensForProject(address _to, uint256 _amount) internal {
+        _mint(_to, _amount);
     }
 }
