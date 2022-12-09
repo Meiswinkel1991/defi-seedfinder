@@ -1,10 +1,10 @@
-const { assert, expect } = require("chai");
+const { assert, expect, use } = require("chai");
 const { ethers, network, deployments } = require("hardhat");
 const { developmentChains } = require("../../helper-hardhat-config");
 const helpers = require("@nomicfoundation/hardhat-network-helpers");
 
 const duration = 86400; //1d
-const reuqestedFunds = ethers.utils.parseEther("1000");
+const requestedFunds = ethers.utils.parseEther("1000");
 const name = "TestProject";
 const symbol = "TP";
 
@@ -35,7 +35,7 @@ const symbol = "TP";
           await projectFactory.createNewProject(
             founder.address,
             fundingAddress.address,
-            reuqestedFunds,
+            requestedFunds,
             deadline,
             name,
             symbol
@@ -51,7 +51,7 @@ const symbol = "TP";
 
           const _price = await projectContract.getTokenPrice();
 
-          const _expectedPrice = reuqestedFunds.div(
+          const _expectedPrice = requestedFunds.div(
             ethers.utils.parseEther("10000")
           );
 
@@ -63,7 +63,7 @@ const symbol = "TP";
           await projectFactory.createNewProject(
             founder.address,
             fundingAddress.address,
-            reuqestedFunds,
+            requestedFunds,
             deadline,
             name,
             symbol
@@ -80,7 +80,7 @@ const symbol = "TP";
           await expect(
             projectContract.initialize(
               deadline,
-              reuqestedFunds,
+              requestedFunds,
               founder.address,
               fundingAddress.address,
               user.address,
@@ -89,6 +89,74 @@ const symbol = "TP";
           ).to.be.revertedWith(
             "Initializable: contract is already initialized"
           );
+        });
+      });
+
+      describe("#swapDSEEDToProjectToken", () => {
+        let tokenAmount, projectContract, DUSDToken, dSeed;
+
+        beforeEach(async () => {
+          //mint DUSD for the user
+
+          DUSDToken = await ethers.getContract("MockToken");
+
+          tokenAmount = ethers.utils.parseEther("100");
+
+          await DUSDToken.connect(user).mint(user.address, tokenAmount);
+
+          // create a new project
+
+          const deadline = (await helpers.time.latest()) + duration;
+          await projectFactory.createNewProject(
+            founder.address,
+            fundingAddress.address,
+            requestedFunds,
+            deadline,
+            name,
+            symbol
+          );
+
+          const projectAddress =
+            projectFactory.getLastDeployedProjectContract();
+
+          projectContract = await ethers.getContractAt(
+            "SeedProject",
+            projectAddress
+          );
+
+          //swap DUSD to dSeed
+
+          dSeed = await ethers.getContract("SeedToken");
+
+          const trove = await ethers.getContract("SeedFinderTrove");
+
+          await DUSDToken.connect(user).approve(trove.address, tokenAmount);
+
+          await trove.connect(user).swapDFITokenToSeedToken(tokenAmount);
+        });
+
+        it("successfully swap dSeed to the project token", async () => {
+          await dSeed
+            .connect(user)
+            .approve(projectContract.address, tokenAmount);
+
+          const projectTokenAddress =
+            await projectContract.getProjectTokenAddress();
+
+          const projectToken = await ethers.getContractAt(
+            "SeedProjectToken",
+            projectTokenAddress
+          );
+
+          await projectContract
+            .connect(user)
+            .swapDSEEDToProjectToken(tokenAmount);
+
+          _balance = await projectToken.balanceOf(user.address);
+
+          const _price = await projectContract.getTokenPrice();
+
+          assert(_balance.eq(tokenAmount.div(_price)));
         });
       });
     });

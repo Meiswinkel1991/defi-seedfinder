@@ -60,10 +60,12 @@ contract ProjectFactory {
 
         address _tokenClone = Clones.clone(projectTokenImplementation);
 
+        uint256 _tokenMaxSupply = _checkMaximumTotalSupply(_requestedFunding);
+
         SeedProjectToken(address(_tokenClone)).initialize(
             _name,
             _symbol,
-            MAX_PROJECT_TOKEN_SUPPLY,
+            _tokenMaxSupply,
             address(_projectClone)
         );
 
@@ -98,6 +100,16 @@ contract ProjectFactory {
     function _isNonZeroAddress(address _to) internal pure {
         if (_to == address(0)) {
             revert ProjectFactory__AddressIsZero();
+        }
+    }
+
+    function _checkMaximumTotalSupply(
+        uint256 _requestAmount
+    ) internal pure returns (uint256) {
+        if (_requestAmount < MAX_PROJECT_TOKEN_SUPPLY) {
+            return _requestAmount;
+        } else {
+            return MAX_PROJECT_TOKEN_SUPPLY;
         }
     }
 

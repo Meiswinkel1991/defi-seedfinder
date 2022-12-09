@@ -167,6 +167,10 @@ contract SeedProject is Initializable {
         }
     }
 
+    function _isMinimumSwapAmount(uint256 _amount) internal view {
+        // TODO check minimum Amount to swap
+    }
+
     /* ====== Pure / View Functions ====== */
     function isFundingFinished() public view returns (bool) {
         return block.timestamp > deadline ? true : false;
