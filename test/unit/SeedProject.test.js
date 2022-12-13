@@ -51,9 +51,7 @@ const symbol = "TP";
 
           const _price = await projectContract.getTokenPrice();
 
-          const _expectedPrice = requestedFunds.div(
-            ethers.utils.parseEther("10000")
-          );
+          const _expectedPrice = ethers.BigNumber.from("1");
 
           assert(_price.eq(_expectedPrice));
         });
@@ -158,5 +156,50 @@ const symbol = "TP";
 
           assert(_balance.eq(tokenAmount.div(_price)));
         });
+
+        it("failed to swap if the allowance is too low", async () => {
+          await dSeed
+            .connect(user)
+            .approve(
+              projectContract.address,
+              tokenAmount.div(ethers.BigNumber.from("2"))
+            );
+
+          await expect(
+            projectContract.connect(user).swapDSEEDToProjectToken(tokenAmount)
+          ).to.be.revertedWithCustomError(
+            projectContract,
+            "SeedProject__NotEnoughDSEEDAllowance"
+          );
+        });
+
+        it("failed to swap if the tokens left not enough", async () => {
+          await dSeed
+            .connect(user)
+            .approve(projectContract.address, tokenAmount);
+
+          const projectTokenAddress =
+            await projectContract.getProjectTokenAddress();
+
+          const projectToken = await ethers.getContractAt(
+            "SeedProjectToken",
+            projectTokenAddress
+          );
+
+          const _balanceProject = await projectToken.balanceOf(
+            projectContract.address
+          );
+
+          const _swapAmount = _balanceProject.mul(ethers.BigNumber.from("2"));
+
+          await expect(
+            projectContract.connect(user).swapDSEEDToProjectToken(_swapAmount)
+          ).to.be.revertedWithCustomError(
+            projectContract,
+            "SeedProject__NotEnoughProjectTokensLeft"
+          );
+        });
       });
+
+      describe("#finishProject", () => {});
     });

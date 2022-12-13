@@ -10,6 +10,7 @@ error SeedProject__FundingDontSucceed();
 error SeedProject__FundingDontFailed();
 error SeedProject__NotEnoughProjectTokensLeft();
 error SeedProject__NotEnoughDSEEDAllowance();
+error SeedProject__NotEnoughTokens();
 
 contract SeedProject is Initializable {
     using SafeMath for uint256;
@@ -118,6 +119,8 @@ contract SeedProject is Initializable {
 
         _sufficientTokenAllowance(_amount);
 
+        _isMinimumSwapAmount(_amount);
+
         require(
             IERC20(seedToken).transferFrom(msg.sender, address(this), _amount)
         );
@@ -168,7 +171,9 @@ contract SeedProject is Initializable {
     }
 
     function _isMinimumSwapAmount(uint256 _amount) internal view {
-        // TODO check minimum Amount to swap
+        if (_amount < tokenPrice) {
+            revert SeedProject__NotEnoughTokens();
+        }
     }
 
     /* ====== Pure / View Functions ====== */
