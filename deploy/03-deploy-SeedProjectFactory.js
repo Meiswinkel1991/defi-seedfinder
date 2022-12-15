@@ -1,5 +1,6 @@
 const { network, ethers } = require("hardhat");
 const { developmentChains } = require("../helper-hardhat-config");
+const { verify } = require("../utils/verify");
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
   const { deployer } = await getNamedAccounts();
@@ -27,12 +28,22 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     seedTokenContract.address,
   ];
 
-  await deploy("ProjectFactory", {
+  const deployedFactory = await deploy("ProjectFactory", {
     from: deployer,
     args: args,
     log: true,
     waitConfirmations: network.config.blockConfirmations || 1,
   });
+
+  if (
+    !developmentChains.includes(network.name) &&
+    process.env.ETHERSCAN_API_KEY
+  ) {
+    log("Verifying ..");
+    await verify(deployedSeedProject.address, []);
+    await verify(deployedSeedProjectToken.address, []);
+    await verify(deployedFactory.address, args);
+  }
 };
 
 module.exports.tags = ["all", "factory"];

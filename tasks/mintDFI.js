@@ -3,27 +3,19 @@ const { developmentChains } = require("../helper-hardhat-config");
 task("mint-DFI", "Mint new DFI Tokens for testing (only hardhat network)")
   .addParam("amount", "Amount of token to mint")
   .setAction(async (taskArgs, hre) => {
-    if (!developmentChains.includes(hre.network.name)) {
-      console.log(
-        `Wrong network. Cant mint DFI tokens. Try to get DFI from faucets...`
-      );
-    } else {
-      const signer = await hre.ethers.getSigner();
+    const signer = (await hre.ethers.getSigners())[0];
 
-      const DFITokenDeployment = await hre.deployments.get("MockToken");
-      const DFIToken = await hre.ethers.getContractAt(
-        DFITokenDeployment.abi,
-        DFITokenDeployment.address
-      );
+    const DFITokenDeployment = await hre.deployments.get("MockToken");
+    const DFIToken = await hre.ethers.getContractAt(
+      DFITokenDeployment.abi,
+      DFITokenDeployment.address
+    );
 
-      const _amount = hre.ethers.utils.parseEther(taskArgs.amount);
+    const _amount = hre.ethers.utils.parseEther(taskArgs.amount);
 
-      await DFIToken.mint(signer.address, _amount);
+    await DFIToken.mint(signer.address, _amount);
 
-      console.log(
-        `Successfully minted ${hre.ethers.utils.formatEther(
-          _amount
-        )} DFI tokens!`
-      );
-    }
+    console.log(
+      `Successfully minted ${hre.ethers.utils.formatEther(_amount)} DFI tokens!`
+    );
   });
