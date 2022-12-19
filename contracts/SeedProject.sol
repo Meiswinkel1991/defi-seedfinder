@@ -11,6 +11,7 @@ error SeedProject__FundingDontFailed();
 error SeedProject__NotEnoughProjectTokensLeft();
 error SeedProject__NotEnoughDSEEDAllowance();
 error SeedProject__NotEnoughTokens();
+error SeedProject__CallerIsNotFounder();
 
 contract SeedProject is Initializable {
     using SafeMath for uint256;
@@ -38,6 +39,8 @@ contract SeedProject is Initializable {
     address private seedToken;
 
     Status private projectStatus;
+
+    string private url;
 
     /* ====== Events ====== */
 
@@ -103,9 +106,7 @@ contract SeedProject is Initializable {
     function finishProject() external isFinished {
         uint256 _fundingAmount = getFundedTokenAmount();
 
-        if (_fundingAmount < requestedFunds) {
-            require(_transferFundsToFundingAddress(_fundingAmount));
-
+        if (_fundingAmount >= requestedFunds) {
             _setStatus(Status.success);
         } else {
             _setStatus(Status.failed);
@@ -176,6 +177,12 @@ contract SeedProject is Initializable {
         }
     }
 
+    function _isFounder() internal view {
+        if (msg.sender != founder) {
+            revert SeedProject__CallerIsNotFounder();
+        }
+    }
+
     /* ====== Pure / View Functions ====== */
     function isFundingFinished() public view returns (bool) {
         return block.timestamp > deadline ? true : false;
@@ -215,5 +222,9 @@ contract SeedProject is Initializable {
 
     function getTokenPrice() external view returns (uint256) {
         return tokenPrice;
+    }
+
+    function getURL() external view returns (string memory) {
+        return url;
     }
 }
